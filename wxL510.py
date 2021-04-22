@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 import wx
 import wx.dataview
-import json
+
+from parameters import Config
 
 class MainFrame(wx.Frame):
     def __init__(self, *args, **kwds):
@@ -36,23 +37,18 @@ class MainFrame(wx.Frame):
         self.all_parameters_ctrl.AppendColumn("Unit")
 
         root = self.all_parameters_ctrl.GetRootItem()
+        config = Config()
 
-        with open('json/parameters.json') as f:
-            parameters = json.load(f)
-
-        for group in parameters.keys():
-            group_node = self.all_parameters_ctrl.AppendItem(root, group)
-            self.all_parameters_ctrl.SetItemText(group_node, 2, parameters[group]['name'])
-            for number in parameters[group].keys():
-                print(group,number)
-                if number == "name":
-                    continue
-                number_node = self.all_parameters_ctrl.AppendItem(group_node, number)
-                self.all_parameters_ctrl.SetItemText(number_node, 0, '')
-                self.all_parameters_ctrl.SetItemText(number_node, 1, number)
-                self.all_parameters_ctrl.SetItemText(number_node, 2, parameters[group][number].get('name',''))
-                self.all_parameters_ctrl.SetItemText(number_node, 3, parameters[group][number].get('default',''))
-                self.all_parameters_ctrl.SetItemText(number_node, 6, parameters[group][number].get('unit',''))
+        for group in config.groups:
+            group_node = self.all_parameters_ctrl.AppendItem(root, group.num)
+            self.all_parameters_ctrl.SetItemText(group_node, 2, group.name)
+            for parameter in group.parameters:
+                 parameter_node = self.all_parameters_ctrl.AppendItem(group_node, parameter.num)
+                 self.all_parameters_ctrl.SetItemText(parameter_node, 0, '')
+                 self.all_parameters_ctrl.SetItemText(parameter_node, 1, parameter.num)
+                 self.all_parameters_ctrl.SetItemText(parameter_node, 2, parameter.name)
+                 self.all_parameters_ctrl.SetItemText(parameter_node, 3, parameter.default)
+                 self.all_parameters_ctrl.SetItemText(parameter_node, 6, parameter.unit)
 
         all_parameters_sizer = wx.BoxSizer(wx.VERTICAL)
         all_parameters_sizer.Add(self.all_parameters_ctrl, 1, wx.EXPAND, 0)
@@ -74,20 +70,15 @@ class MainFrame(wx.Frame):
 
         root = self.parameter_sets_ctrl.GetRootItem()
 
-        with open('json/parameter_sets.json') as f:
-            parameter_sets = json.load(f)
-
-        for set in parameter_sets.keys():
-            set_node = self.parameter_sets_ctrl.AppendItem(root, set)
-            for group_num in parameter_sets[set]:
-                (group,num) = group_num.split('-')
+        for set in config.sets:
+            set_node = self.parameter_sets_ctrl.AppendItem(root, set.name)
+            for parameter in set.parameters:
                 param_node = self.parameter_sets_ctrl.AppendItem(set_node, '')
-                self.parameter_sets_ctrl.SetItemText(param_node, 1, group)
-                self.parameter_sets_ctrl.SetItemText(param_node, 2, num)
-                self.parameter_sets_ctrl.SetItemText(param_node, 3, parameters[group][num].get('name',''))
-                self.parameter_sets_ctrl.SetItemText(param_node, 4, parameters[group][num].get('default',''))
-                self.parameter_sets_ctrl.SetItemText(param_node, 7, parameters[group][num].get('unit',''))
-
+                self.parameter_sets_ctrl.SetItemText(param_node, 1, parameter.group.num)
+                self.parameter_sets_ctrl.SetItemText(param_node, 2, parameter.num)
+                self.parameter_sets_ctrl.SetItemText(param_node, 3, parameter.name)
+                self.parameter_sets_ctrl.SetItemText(param_node, 4, parameter.default)
+                self.parameter_sets_ctrl.SetItemText(param_node, 7, parameter.unit)
 
         parameter_sets_sizer = wx.BoxSizer(wx.VERTICAL)
         parameter_sets_sizer.Add(self.parameter_sets_ctrl, 1, wx.EXPAND, 0)
@@ -95,7 +86,6 @@ class MainFrame(wx.Frame):
         self.notebook.AddPage(self.parameter_sets_pane, "Parameter Sets")
 
         self.Layout()
-        # end wxGlade
 
 # end of class MainFrame
 
