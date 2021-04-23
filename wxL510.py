@@ -9,13 +9,29 @@ class MainFrame(wx.Frame):
         wx.Frame.__init__(self, *args, **kwds)
         self.SetTitle("wxL510")
 
+        # File Menu
+        filemenu = wx.Menu()
+        menuAbout = filemenu.Append(wx.ID_ABOUT)
+        self.Bind(wx.EVT_MENU, self.OnAbout, menuAbout)
+        menuExit = filemenu.Append(wx.ID_EXIT)
+        self.Bind(wx.EVT_MENU, self.OnExit, menuExit)
+
+        # VFD Menu
+        vfdmenu = wx.Menu()
+        menuConnect = vfdmenu.Append(wx.ID_YES, "&Connect")
+        self.Bind(wx.EVT_MENU, self.OnConnect, menuConnect)
+        menuDisconnect = vfdmenu.Append(wx.ID_NO, "&Disconnect")
+        self.Bind(wx.EVT_MENU, self.OnDisconnect, menuDisconnect)
+
         # Menu Bar
-        self.menubar = wx.MenuBar()
-        self.SetMenuBar(self.menubar)
+        menubar = wx.MenuBar()
+        menubar.Append(filemenu, "&File")
+        menubar.Append(vfdmenu, "&VFD")
+        self.SetMenuBar(menubar)
 
         # Status Bar
         self.statusbar = self.CreateStatusBar(2)
-        self.statusbar.SetStatusText('Status left')
+        self.statusbar.SetStatusText('Disconnected')
         self.statusbar.SetStatusText('Status right', 1)
 
         # Notebook
@@ -27,7 +43,6 @@ class MainFrame(wx.Frame):
 
         self.all_parameters_ctrl = wx.dataview.TreeListCtrl(self.all_parameters_pane, wx.ID_ANY)
 
-        # Creating columns:
         self.all_parameters_ctrl.AppendColumn("Group")
         self.all_parameters_ctrl.AppendColumn("Number")
         self.all_parameters_ctrl.AppendColumn("Parameter")
@@ -58,7 +73,6 @@ class MainFrame(wx.Frame):
         self.parameter_sets_pane = wx.Panel(self.notebook, wx.ID_ANY)
         self.parameter_sets_ctrl = wx.dataview.TreeListCtrl(self.parameter_sets_pane, wx.ID_ANY)
 
-        # Creating columns:
         self.parameter_sets_ctrl.AppendColumn("Set")
         self.parameter_sets_ctrl.AppendColumn("Group")
         self.parameter_sets_ctrl.AppendColumn("Number")
@@ -86,6 +100,21 @@ class MainFrame(wx.Frame):
         self.notebook.AddPage(self.parameter_sets_pane, "Parameter Sets")
 
         self.Layout()
+
+    def OnConnect(self, e):
+        self.statusbar.SetStatusText('Connecting...')
+        self.statusbar.SetStatusText('Connected')
+
+    def OnDisconnect(self, e):
+        self.statusbar.SetStatusText('Disconnected')
+
+    def OnAbout(self, e):
+        dialog = wx.MessageDialog(self, "A simple interface to the Teco-Westinghouse L510 VFD.", "About wxL510")
+        dialog.ShowModal()
+        dialog.Destroy()
+
+    def OnExit(self, e):
+        self.Close(True)
 
 # end of class MainFrame
 
