@@ -2,7 +2,7 @@
 import wx
 import wx.dataview
 
-from parameters import Config
+from vfd import VFD
 
 class MainFrame(wx.Frame):
     def __init__(self, *args, **kwds):
@@ -31,8 +31,11 @@ class MainFrame(wx.Frame):
 
         # Status Bar
         self.statusbar = self.CreateStatusBar(2)
-        self.statusbar.SetStatusText('Disconnected')
+        self.statusbar.SetStatusText('Disconnected from VFD')
         self.statusbar.SetStatusText('Status right', 1)
+
+        # Initialize the VFD Object
+        self.vfd = VFD('/dev/ttyUSB0',1)
 
         # Notebook
         self.notebook = wx.Notebook(self, wx.ID_ANY)
@@ -52,9 +55,8 @@ class MainFrame(wx.Frame):
         self.all_parameters_ctrl.AppendColumn("Unit")
 
         root = self.all_parameters_ctrl.GetRootItem()
-        config = Config()
 
-        for group in config.groups:
+        for group in self.vfd.config.groups:
             group_node = self.all_parameters_ctrl.AppendItem(root, group.num)
             self.all_parameters_ctrl.SetItemText(group_node, 2, group.name)
             for parameter in group.parameters:
@@ -84,7 +86,7 @@ class MainFrame(wx.Frame):
 
         root = self.parameter_sets_ctrl.GetRootItem()
 
-        for set in config.sets:
+        for set in self.vfd.config.sets:
             set_node = self.parameter_sets_ctrl.AppendItem(root, set.name)
             for parameter in set.parameters:
                 param_node = self.parameter_sets_ctrl.AppendItem(set_node, '')
@@ -102,11 +104,37 @@ class MainFrame(wx.Frame):
         self.Layout()
 
     def OnConnect(self, e):
-        self.statusbar.SetStatusText('Connecting...')
-        self.statusbar.SetStatusText('Connected')
+        self.statusbar.SetStatusText('Connecting to VFD...')
+        if self.vfd.connect():
+            self.statusbar.SetStatusText('Loading parameters from VFD...')
+            group_item = self.all_parameters_ctrl.GetFirstItem()
+            while group_item.IsOk():
+                print("group_num:", self.all_parameters_ctrl.GetItemText(group_item, 0))
+                group = self.vfd.config.group(self.all_parameters_ctrl.GetItemText(group_item, 0))
+                self.statusbar.SetStatusText('Loading ' + group.name, 1)
+                param_item = self.all_parameters_ctrl.GetFirstChild(group_item)
+                while param_item.IsOk():
+                    parameter = group.parameter(self.all_parameters_ctrl.GetItemText(param_item, 1))
+                    self.all_parameters_ctrl.SetItemText(param_item, 5, str(self.vfd.parameter(parameter)))
+                    param_item = self.all_parameters_ctrl.GetNextSibling(param_item)
+                group_item = self.all_parameters_ctrl.GetNextSibling(group_item)
+            self.statusbar.SetStatusText('', 1)
+
+            item = self.parameter_sets_ctrl.GetFirstItem()
+            while item.IsOk():
+                group = self.vfd.config.group(self.parameter_sets_ctrl.GetItemText(item, 1))
+                if group:
+                    parameter = group.parameter(self.parameter_sets_ctrl.GetItemText(item, 2))
+                    if parameter:
+                        self.parameter_sets_ctrl.SetItemText(item, 6, str(self.vfd.parameter(parameter)))
+                item = self.parameter_sets_ctrl.GetNextItem(item)
+            self.statusbar.SetStatusText('Connected to VFD')
+        else:
+            self.statusbar.SetStatusText('VFD Connection Failed')
 
     def OnDisconnect(self, e):
-        self.statusbar.SetStatusText('Disconnected')
+        self.vfd.disconnect()
+        self.statusbar.SetStatusText('Disconnected from VFD')
 
     def OnAbout(self, e):
         dialog = wx.MessageDialog(self, "A simple interface to the Teco-Westinghouse L510 VFD.", "About wxL510")

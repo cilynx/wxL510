@@ -10,14 +10,19 @@ class Config:
             self.groups.append(group)
             for param_num in parameters[group_num].keys():
                 if param_num != 'name':
-                    group.parameters.append(
-                        Parameter(
-                            group,
-                            param_num,
-                            parameters[group_num][param_num].get('name',''),
-                            parameters[group_num][param_num].get('default',''),
-                            parameters[group_num][param_num].get('unit','')
-                        ))
+                    parameter = Parameter(
+                                    group,
+                                    param_num,
+                                    parameters[group_num][param_num].get('name',''),
+                                    parameters[group_num][param_num].get('default',''),
+                                    parameters[group_num][param_num].get('unit','')
+                                )
+                    options = parameters[group_num][param_num].get('options')
+                    if options:
+                        parameter.options = {}
+                        for option_key in options.keys():
+                            parameter.options[option_key] = options[option_key]
+                    group.parameters.append(parameter)
         self.sets = []
         with open('json/parameter_sets.json') as f:
             parameter_sets = json.load(f)
@@ -45,11 +50,25 @@ class Group:
         for parameter in self.parameters:
             if parameter.num == param_num and parameter.group.num == group_num:
                 return parameter
+        return None
 
 class Parameter:
     def __init__(self, group, num, name, default, unit):
         self.group = group
         self.num = num
         self.name = name
-        self.default = default
+        self._default = default
         self.unit = unit
+
+    @property
+    def default(self):
+        try:
+            return self.options[self._default]
+        except:
+            return self._default
+
+    @property
+    def scale(self):
+        if self._default != None and '.' in self._default:
+            return 0.1 if len(self._default)-self._default.index('.') == 2 else 0.01
+        return 1
